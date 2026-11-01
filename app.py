@@ -3,10 +3,10 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 import numpy as np
 
-st.title("🔮 Predicción de Ventas Futuras (Superstore) para ACA I Aprendizaje Autonomo")
+st.title("🛍️ Predicción de Ventas Futuras (Superstore) para ACA I Aprendizaje Autónomo 🛍️" )
 st.write("Para cumplir con dicho ACA se toma el dataset de Sales, donde el objetivo es predecir las ventas de los próximos 7 días.")
 
-# 1. Cargamos el dataset directamente dentro de la app
+# Cargar el dataset
 @st.cache_data
 def cargar_y_preprocesar_datos():
     df = pd.read_csv('train.csv')
@@ -21,7 +21,7 @@ def cargar_y_preprocesar_datos():
     df_diario = pd.merge(df_completo, df_diario, on='Order Date', how='left')
     df_diario['Sales'] = df_diario['Sales'].fillna(0.0)
     
-    # Cálculo de la variable objetivo (Ventas próximos 7 días)
+    # Cálculo de la variable objetivo X (Ventas próximos 7 días)
     df_diario['Ventas_Proximos_7_Dias'] = df_diario['Sales'].shift(-1).rolling(window=7, min_periods=7).sum()
     
     # Variables de retraso (Lags) y calendario
@@ -33,22 +33,23 @@ def cargar_y_preprocesar_datos():
     df_ml = df_diario.dropna().reset_index(drop=True)
     return df_ml
 
-# Cargamos los datos procesados
+# Cargar los datos procesados
 df_ml = cargar_y_preprocesar_datos()
 
-# 2. Entrenamos el modelo con los datos procesados
+#Entrenar el modelo con los datos procesados de las variables X y Y
 X = df_ml[['Sales_Lag_Ayer', 'Sales_Lag_Semana', 'Dia_Semana', 'Mes']]
 y = df_ml['Ventas_Proximos_7_Dias']
 
+#Seleccion de modelo regresión lineal
 modelo = LinearRegression()
 modelo.fit(X, y)
 
-# 3. Interfaz de usuario en Streamlit Sidebar
+#Interfaz en Streamlit Sidebar
 st.sidebar.header("Ingrese los datos de entrada:")
 lag_ayer = st.sidebar.number_input("Ventas de Ayer (Sales_Lag_Ayer)", min_value=0.0, value=100.0)
 lag_semana = st.sidebar.number_input("Ventas de hace una semana (Sales_Lag_Semana)", min_value=0.0, value=150.0)
-dia_semana = st.sidebar.selectbox("Día de la semana (0=Lunes, 6=Domingo)", options=[0, 1, 2, 3, 4, 5, 6], index=0)
-mes = st.sidebar.slider("Mes del año", min_value=1, max_value=12, value=1)
+dia_semana = st.sidebar.selectbox("Día de la semana: tenga en cuenta que el domingo inicia con el número 0", options=[0, 1, 2, 3, 4, 5, 6], index=0)
+mes = st.sidebar.slider("Mes del año (número)", min_value=1, max_value=12, value=1)
 
 if st.button("Predecir Ventas de los Próximos 7 Días"):
     datos_usuario = pd.DataFrame([[lag_ayer, lag_semana, dia_semana, mes]], 
