@@ -4,7 +4,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 import plotly.express as px
 import numpy as np
 
-st.title("🛍️ Predicción de Ventas Futuras (Superstore - Alta Precisión) 🛍️")
+st.title("🛍️ Predicción de Ventas Futuras - Dataset Sales 🛍️")
 st.write("Acá podrás utilizar un modelo de **Gradient Boosting** con cálculo automático de tendencias para predecir las ventas de los próximos 7 días en este dataset.")
 
 # Cargamos y preprocesamos el dataset y calculamos la media móvil internamente
