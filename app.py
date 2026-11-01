@@ -3,8 +3,8 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 import numpy as np
 
-st.title("🔮 Predicción de Ventas Futuras (Superstore)")
-st.write("Esta aplicación utiliza un modelo de Machine Learning entrenado con tus datos para predecir las ventas de los próximos 7 días.")
+st.title("🔮 Predicción de Ventas Futuras (Superstore) para ACA I Aprendizaje Autonomo")
+st.write("Para cumplir con dicho ACA se toma el dataset de Sales, donde el objetivo es predecir las ventas de los próximos 7 días.")
 
 # 1. Cargamos el dataset directamente dentro de la app
 @st.cache_data
