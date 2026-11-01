@@ -1,12 +1,12 @@
 import streamlit as st
 import pandas as pd
-from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import GradientBoostingRegressor
 import numpy as np
 
-st.title("🛍️ Predicción de Ventas Futuras (Superstore) para ACA I Aprendizaje Autónomo 🛍️" )
-st.write("Para cumplir con dicho ACA se toma el dataset de Sales, donde el objetivo es predecir las ventas de los próximos 7 días.")
+st.title("🔮 Predicción de Ventas Futuras (Superstore - Gradient Boosting)")
+st.write("Esta aplicación utiliza un modelo de Machine Learning avanzado con **Media Móvil y Gradient Boosting** para predecir las ventas de los próximos 7 días con alta precisión.")
 
-# Cargar el dataset
+# 1. Cargamos y preprocesamos el dataset directamente dentro de la app
 @st.cache_data
 def cargar_y_preprocesar_datos():
     df = pd.read_csv('train.csv')
@@ -21,41 +21,42 @@ def cargar_y_preprocesar_datos():
     df_diario = pd.merge(df_completo, df_diario, on='Order Date', how='left')
     df_diario['Sales'] = df_diario['Sales'].fillna(0.0)
     
-    # Cálculo de la variable objetivo X (Ventas próximos 7 días)
+    # Cálculo de la variable objetivo (Ventas próximos 7 días)
     df_diario['Ventas_Proximos_7_Dias'] = df_diario['Sales'].shift(-1).rolling(window=7, min_periods=7).sum()
     
-    # Variables de retraso (Lags) y calendario
+    # Variables de retraso (Lags), Media Móvil y calendario
     df_diario['Sales_Lag_Ayer'] = df_diario['Sales'].shift(1)
     df_diario['Sales_Lag_Semana'] = df_diario['Sales'].shift(7)
+    df_diario['Media_Movil_7D'] = df_diario['Sales'].rolling(window=7).mean()
     df_diario['Dia_Semana'] = df_diario['Order Date'].dt.dayofweek
     df_diario['Mes'] = df_diario['Order Date'].dt.month
     
     df_ml = df_diario.dropna().reset_index(drop=True)
     return df_ml
 
-# Cargar los datos procesados
+# Cargamos los datos procesados
 df_ml = cargar_y_preprocesar_datos()
 
-#Entrenar el modelo con los datos procesados de las variables X y Y
-X = df_ml[['Sales_Lag_Ayer', 'Sales_Lag_Semana', 'Dia_Semana', 'Mes']]
+# 2. Entrenamos el modelo con Gradient Boosting
+X = df_ml[['Sales_Lag_Ayer', 'Sales_Lag_Semana', 'Media_Movil_7D', 'Dia_Semana', 'Mes']]
 y = df_ml['Ventas_Proximos_7_Dias']
 
-#Seleccion de modelo regresión lineal
-modelo = LinearRegression()
+modelo = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
 modelo.fit(X, y)
 
-#Interfaz en Streamlit Sidebar
+# 3. Interfaz de usuario en Streamlit Sidebar
 st.sidebar.header("Ingrese los datos de entrada:")
 lag_ayer = st.sidebar.number_input("Ventas de Ayer (Sales_Lag_Ayer)", min_value=0.0, value=100.0)
 lag_semana = st.sidebar.number_input("Ventas de hace una semana (Sales_Lag_Semana)", min_value=0.0, value=150.0)
-dia_semana = st.sidebar.selectbox("Día de la semana: tenga en cuenta que el domingo inicia con el número 0", options=[0, 1, 2, 3, 4, 5, 6], index=0)
-mes = st.sidebar.slider("Mes del año (número)", min_value=1, max_value=12, value=1)
+media_movil = st.sidebar.number_input("Media Móvil de los últimos 7 días", min_value=0.0, value=200.0)
+dia_semana = st.sidebar.selectbox("Día de la semana (0=Lunes, 6=Domingo)", options=[0, 1, 2, 3, 4, 5, 6], index=0)
+mes = st.sidebar.slider("Mes del año", min_value=1, max_value=12, value=1)
 
 if st.button("Predecir Ventas de los Próximos 7 Días"):
-    datos_usuario = pd.DataFrame([[lag_ayer, lag_semana, dia_semana, mes]], 
-                                 columns=['Sales_Lag_Ayer', 'Sales_Lag_Semana', 'Dia_Semana', 'Mes'])
+    datos_usuario = pd.DataFrame([[lag_ayer, lag_semana, media_movil, dia_semana, mes]], 
+                                 columns=['Sales_Lag_Ayer', 'Sales_Lag_Semana', 'Media_Movil_7D', 'Dia_Semana', 'Mes'])
     
     prediccion = modelo.predict(datos_usuario)[0]
     
-    st.success(f"### 📈 Predicción estimada: ${prediccion:,.2f}")
+    st.success(f"### 📈 Predicción estimada (Alta Precisión): ${prediccion:,.2f}")
     st.balloons()
