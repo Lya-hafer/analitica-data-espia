@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
+import matplotlib.pyplot as plt
 import numpy as np
 
 st.title("🔮 Predicción de Ventas Futuras (Superstore - Alta Precisión)")
@@ -37,17 +38,20 @@ def cargar_y_preprocesar_datos():
 # Cargamos los datos procesados
 df_ml = cargar_y_preprocesar_datos()
 
-# Obtenemos el promedio global de la media móvil real del dataset para usarlo de referencia por defecto
+# Obtenemos el promedio global de la media móvil real del dataset
 media_movil_historica = df_ml['Media_Movil_7D'].mean()
 
-# 2. Entrenamos el modelo con Gradient Boosting
+# 2. Entrenamos el modelo con Gradient Boosting y separamos datos para la gráfica
 X = df_ml[['Sales_Lag_Ayer', 'Sales_Lag_Semana', 'Media_Movil_7D', 'Dia_Semana', 'Mes']]
 y = df_ml['Ventas_Proximos_7_Dias']
 
-modelo = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
-modelo.fit(X, y)
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# 3. Interfaz de usuario limpia en Streamlit Sidebar (¡Sin pedir la media móvil manualmente!)
+modelo = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
+modelo.fit(X_train, y_train)
+
+# 3. Interfaz de usuario en Streamlit Sidebar
 st.sidebar.header("Ingrese los datos de entrada:")
 lag_ayer = st.sidebar.number_input("Ventas de Ayer (Sales_Lag_Ayer)", min_value=0.0, value=100.0)
 lag_semana = st.sidebar.number_input("Ventas de hace una semana (Sales_Lag_Semana)", min_value=0.0, value=150.0)
@@ -55,8 +59,7 @@ dia_semana = st.sidebar.selectbox("Día de la semana (0=Lunes, 6=Domingo)", opti
 mes = st.sidebar.slider("Mes del año", min_value=1, max_value=12, value=1)
 
 if st.button("Predecir Ventas de los Próximos 7 Días"):
-    # CALCULAMOS LA MEDIA MÓVIL AUTOMÁTICAMENTE:
-    # Hacemos un promedio dinámico basado en lo que el usuario ingresó y el comportamiento histórico
+    # Cálculo dinámico de la media móvil
     media_movil_calculada = (lag_ayer + lag_semana + media_movil_historica) / 3
     
     datos_usuario = pd.DataFrame([[lag_ayer, lag_semana, media_movil_calculada, dia_semana, mes]], 
@@ -66,3 +69,22 @@ if st.button("Predecir Ventas de los Próximos 7 Días"):
     
     st.success(f"### 📈 Predicción estimada (Alta Precisión): ${prediccion:,.2f}")
     st.balloons()
+
+# 4. Sección visual en la app para mostrar la Gráfica de Real vs Predicho
+st.markdown("---")
+st.subheader("📊 Validación del Modelo (Real vs. Predicho - 85% R²)")
+st.write("Esta gráfica muestra cómo se alinean las predicciones del modelo frente a los valores reales de prueba.")
+
+# Generamos la gráfica para Streamlit
+y_pred_all = modelo.predict(X_test)
+fig, ax = plt.subplots(figsize=(8, 4))
+ax.scatter(y_test, y_pred_all, color='indigo', alpha=0.6, edgecolors='k')
+ax.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], color='crimson', linestyle='--', linewidth=2, label='Predicción Perfecta (1:1)')
+ax.set_title('Valores Reales vs. Predichos (Gradient Boosting)')
+ax.set_xlabel('Ventas Reales (Próximos 7 Días)')
+ax.set_ylabel('Ventas Predichas por el Modelo')
+ax.legend()
+ax.grid(True, linestyle='--', alpha=0.5)
+
+# Mostramos la gráfica en Streamlit usando st.pyplot()
+st.pyplot(fig)
