@@ -4,10 +4,10 @@ from sklearn.ensemble import GradientBoostingRegressor
 import plotly.express as px
 import numpy as np
 
-st.title("🔮 Predicción de Ventas Futuras (Superstore - Alta Precisión)")
-st.write("Esta aplicación utiliza un modelo avanzado de **Gradient Boosting** con cálculo automático de tendencias para predecir las ventas de los próximos 7 días.")
+st.title("🛍️ Predicción de Ventas Futuras (Superstore - Alta Precisión) 🛍️")
+st.write("Acá podrás utilizar un modelo de **Gradient Boosting** con cálculo automático de tendencias para predecir las ventas de los próximos 7 días en este dataset.")
 
-# 1. Cargamos y preprocesamos el dataset y calculamos la media móvil internamente
+# Cargamos y preprocesamos el dataset y calculamos la media móvil internamente
 @st.cache_data
 def cargar_y_preprocesar_datos():
     df = pd.read_csv('train.csv')
@@ -35,13 +35,13 @@ def cargar_y_preprocesar_datos():
     df_ml = df_diario.dropna().reset_index(drop=True)
     return df_ml
 
-# CARGAMOS LOS DATOS PRIMERO (Aquí se define df_ml correctamente)
+# Cargar los datos
 df_ml = cargar_y_preprocesar_datos()
 
 # Obtenemos el promedio global de la media móvil real del dataset
 media_movil_historica = df_ml['Media_Movil_7D'].mean()
 
-# 2. Entrenamos el modelo con Gradient Boosting y separamos datos para la gráfica
+#Entrenamiento del modelo
 X = df_ml[['Sales_Lag_Ayer', 'Sales_Lag_Semana', 'Media_Movil_7D', 'Dia_Semana', 'Mes']]
 y = df_ml['Ventas_Proximos_7_Dias']
 
@@ -51,7 +51,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 modelo = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
 modelo.fit(X_train, y_train)
 
-# 3. Interfaz de usuario en Streamlit Sidebar
+#Vista del streamlit y lo que el usuario puede ingresar
 st.sidebar.header("Ingrese los datos de entrada:")
 lag_ayer = st.sidebar.number_input("Ventas de Ayer (Sales_Lag_Ayer)", min_value=0.0, value=100.0)
 lag_semana = st.sidebar.number_input("Ventas de hace una semana (Sales_Lag_Semana)", min_value=0.0, value=150.0)
@@ -59,7 +59,7 @@ dia_semana = st.sidebar.selectbox("Día de la semana (0=Lunes, 6=Domingo)", opti
 mes = st.sidebar.slider("Mes del año", min_value=1, max_value=12, value=1)
 
 if st.button("Predecir Ventas de los Próximos 7 Días"):
-    # Cálculo dinámico de la media móvil
+    #Calculo de la media movil
     media_movil_calculada = (lag_ayer + lag_semana + media_movil_historica) / 3
     
     datos_usuario = pd.DataFrame([[lag_ayer, lag_semana, media_movil_calculada, dia_semana, mes]], 
@@ -70,19 +70,19 @@ if st.button("Predecir Ventas de los Próximos 7 Días"):
     st.success(f"### 📈 Predicción estimada (Alta Precisión): ${prediccion:,.2f}")
     st.balloons()
 
-# 4. Sección visual interactiva con Plotly
+#Sección visual interactiva con Plotly
 st.markdown("---")
 st.subheader("📊 Validación Interactiva del Modelo (Real vs. Predicho - 85% R²)")
 st.write("Pasa el cursor sobre los puntos para ver los valores detallados o usa las herramientas de zoom de la esquina superior derecha.")
 
-# Preparamos los datos en un DataFrame para Plotly
+#preparación de datos del dataframe para el plotly
 y_pred_all = modelo.predict(X_test)
 df_grafica = pd.DataFrame({
     'Ventas Reales': y_test,
     'Ventas Predichas': y_pred_all
 })
 
-# Creamos la gráfica interactiva con Plotly Express
+#creación de la gráfica
 fig = px.scatter(
     df_grafica, 
     x='Ventas Reales', 
@@ -91,7 +91,7 @@ fig = px.scatter(
     title='Valores Reales vs. Predichos (Gradient Boosting)'
 )
 
-# Añadimos una línea diagonal de referencia perfecta (1:1)
+#Linea diagonal del modelo y esperado
 min_val = min(df_grafica['Ventas Reales'].min(), df_grafica['Ventas Predichas'].min())
 max_val = max(df_grafica['Ventas Reales'].max(), df_grafica['Ventas Predichas'].max())
 fig.add_shape(
@@ -101,12 +101,12 @@ fig.add_shape(
     line=dict(color='crimson', dash='dash', width=2)
 )
 
-# Estilos adicionales para que luzca limpia
+#titulos de ayuda
 fig.update_layout(
     xaxis_title='Ventas Reales (Próximos 7 Días)',
     yaxis_title='Ventas Predichas por el Modelo',
     template='plotly_white'
 )
 
-# Mostramos la gráfica interactiva en Streamlit
+#Despliegue de la gráfica
 st.plotly_chart(fig, use_container_width=True)
