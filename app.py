@@ -52,7 +52,7 @@ modelo = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, random_s
 modelo.fit(X_train, y_train)
 
 #Vista del streamlit y lo que el usuario puede ingresar
-st.sidebar.header("📊 Ingrese los datos de entrada: 📊")
+st.sidebar.header("🔽 Ingrese los datos de entrada:")
 lag_ayer = st.sidebar.number_input("Ventas de Ayer (Sales_Lag_Ayer)", min_value=0.0, value=100.0)
 lag_semana = st.sidebar.number_input("Ventas de hace una semana (Sales_Lag_Semana)", min_value=0.0, value=150.0)
 dia_semana = st.sidebar.selectbox("Día de la semana (0=Lunes, 6=Domingo)", options=[0, 1, 2, 3, 4, 5, 6], index=0)
