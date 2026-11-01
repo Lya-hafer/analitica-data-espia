@@ -3,10 +3,10 @@ import pandas as pd
 from sklearn.ensemble import GradientBoostingRegressor
 import numpy as np
 
-st.title("🔮 Predicción de Ventas Futuras (Superstore - Gradient Boosting)")
-st.write("Esta aplicación utiliza un modelo de Machine Learning avanzado con **Media Móvil y Gradient Boosting** para predecir las ventas de los próximos 7 días con alta precisión.")
+st.title("🔮 Predicción de Ventas Futuras (Superstore - Alta Precisión)")
+st.write("Esta aplicación utiliza un modelo avanzado de **Gradient Boosting** con cálculo automático de tendencias para predecir las ventas de los próximos 7 días.")
 
-# 1. Cargamos y preprocesamos el dataset directamente dentro de la app
+# 1. Cargamos y preprocesamos el dataset y calculamos la media móvil internamente
 @st.cache_data
 def cargar_y_preprocesar_datos():
     df = pd.read_csv('train.csv')
@@ -37,6 +37,9 @@ def cargar_y_preprocesar_datos():
 # Cargamos los datos procesados
 df_ml = cargar_y_preprocesar_datos()
 
+# Obtenemos el promedio global de la media móvil real del dataset para usarlo de referencia por defecto
+media_movil_historica = df_ml['Media_Movil_7D'].mean()
+
 # 2. Entrenamos el modelo con Gradient Boosting
 X = df_ml[['Sales_Lag_Ayer', 'Sales_Lag_Semana', 'Media_Movil_7D', 'Dia_Semana', 'Mes']]
 y = df_ml['Ventas_Proximos_7_Dias']
@@ -44,16 +47,19 @@ y = df_ml['Ventas_Proximos_7_Dias']
 modelo = GradientBoostingRegressor(n_estimators=100, learning_rate=0.1, random_state=42)
 modelo.fit(X, y)
 
-# 3. Interfaz de usuario en Streamlit Sidebar
+# 3. Interfaz de usuario limpia en Streamlit Sidebar (¡Sin pedir la media móvil manualmente!)
 st.sidebar.header("Ingrese los datos de entrada:")
 lag_ayer = st.sidebar.number_input("Ventas de Ayer (Sales_Lag_Ayer)", min_value=0.0, value=100.0)
 lag_semana = st.sidebar.number_input("Ventas de hace una semana (Sales_Lag_Semana)", min_value=0.0, value=150.0)
-media_movil = st.sidebar.number_input("Media Móvil de los últimos 7 días", min_value=0.0, value=200.0)
 dia_semana = st.sidebar.selectbox("Día de la semana (0=Lunes, 6=Domingo)", options=[0, 1, 2, 3, 4, 5, 6], index=0)
 mes = st.sidebar.slider("Mes del año", min_value=1, max_value=12, value=1)
 
 if st.button("Predecir Ventas de los Próximos 7 Días"):
-    datos_usuario = pd.DataFrame([[lag_ayer, lag_semana, media_movil, dia_semana, mes]], 
+    # CALCULAMOS LA MEDIA MÓVIL AUTOMÁTICAMENTE:
+    # Hacemos un promedio dinámico basado en lo que el usuario ingresó y el comportamiento histórico
+    media_movil_calculada = (lag_ayer + lag_semana + media_movil_historica) / 3
+    
+    datos_usuario = pd.DataFrame([[lag_ayer, lag_semana, media_movil_calculada, dia_semana, mes]], 
                                  columns=['Sales_Lag_Ayer', 'Sales_Lag_Semana', 'Media_Movil_7D', 'Dia_Semana', 'Mes'])
     
     prediccion = modelo.predict(datos_usuario)[0]
